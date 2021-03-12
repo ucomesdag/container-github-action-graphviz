@@ -1,0 +1,4 @@
+---
+galaxy_info:
+  namespace: ucomesdag
+  role_name: my_ansible_role

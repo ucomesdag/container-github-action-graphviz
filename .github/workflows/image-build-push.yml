@@ -1,0 +1,64 @@
+---
+name: Build and Push
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  push:
+  workflow_dispatch:
+
+jobs:
+  get-branches:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+    steps:
+      - name: Extract branch name
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+
+      - name: Extract branch name on pull request
+        if: github.event_name == 'pull_request'
+        run: echo "BRANCH_NAME=${GITHUB_HEAD_REF}" >> $GITHUB_ENV
+
+      - name: Export all branches
+        if: github.event_name == 'schedule'
+        uses: ucomesdag/export-branches-action@main
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate matrix from branches
+        id: matrix
+        run: |
+          [[ -z ${BRANCHES+x} ]] && BRANCHES="${{ env.BRANCH_NAME }}"
+          BRANCH_LIST=""
+          for BRANCH in ${BRANCHES}; do
+            BRANCH_LIST="${BRANCH_LIST}${BRANCH_LIST:+, }\"${BRANCH}\""
+          done
+          echo "value=[${BRANCH_LIST}]" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    needs: [ get-branches ]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.get-branches.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Create tag from branch name
+        run: |
+          BRANCH_NAME=${{ matrix.branch }}
+          echo "IMAGE_TAG=${BRANCH_NAME/main/latest}" >> $GITHUB_ENV
+
+      - name: Build and push container image
+        uses: ucomesdag/container-image-build-push-action@main
+        with:
+          username: ${{ secrets.QUAY_IO_USERNAME }}
+          access_token: ${{ secrets.QUAY_IO_ACCESS_TOKEN }}
+          project_name: ucomesdag
+          image_name: github-action-graphviz:${{ env.IMAGE_TAG }}

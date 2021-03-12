@@ -1,0 +1,8 @@
+---
+roles:
+  - name: mesdag.role1
+  - name: mesdag.role2
+  - name: mesdag.role2
+  - name: mesdag.role4
+  - name: mesdag.role5
+  - name: other.role
