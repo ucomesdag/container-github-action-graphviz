@@ -1,8 +1,15 @@
 ---
 roles:
-  - name: mesdag.role1
-  - name: mesdag.role2
-  - name: mesdag.role2
-  - name: mesdag.role4
-  - name: mesdag.role5
+  - name: my_namespace.role1
+  - name: my_namespace.role2
+  - name: my_namespace.role3
+  - name: my_namespace.role4
+  - name: my_namespace.role5
   - name: other.role
+
+collections:
+  - name: my_namespace.collection
+  - name: ansible.posix
+  - name: ansible.utils
+  - name: community.general
+  - name: containers.podman

@@ -2,8 +2,9 @@ FROM fedora:latest
 
 ARG BUILD_DATE
 
+LABEL summary="A container that is used the github action graphviz."
 LABEL maintainer="Uco Mesdag <uco@mesd.ag>"
-LABEL build_date=${BUILD_DATE}
+LABEL build-date=${BUILD_DATE}
 
 WORKDIR /github/workspace
 

@@ -1,4 +1,4 @@
 ---
 galaxy_info:
-  namespace: ucomesdag
+  namespace: my_namespace
   role_name: my_ansible_role

@@ -12,7 +12,7 @@ graph {
   fontsize="8.5";
   fontname="Sans serif";
 
-  label="ansible role depencencies";
+  label="ansible role dependencies";
 
   layout=dot;
   splines=compound;
@@ -21,29 +21,53 @@ graph {
   dpi=300;
 
   {
-    "${this_role}"
+    "${this_namespace}.${this_role}"
 EOF
 
-if [ ! -f requirements.yml ] || grep -q '\[\s*\]' requirements.yml 2>/dev/null; then
+collections=$(cat requirements.yml | shyaml get-value collections | sed 's/\[\]//')
+roles=$(cat requirements.yml | shyaml get-value roles | sed 's/\[\]//')
+
+if [ ! -f requirements.yml ] || \
+      ( [ "$collections" == "" ] && [ "$roles" == "" ] ); then
   echo "    \"none\" [shape=plaintext] " >> "${output_file}"
   echo "  }" >> "${output_file}"
-  echo "  \"${this_role}\" -- \"none\"" >> "${output_file}"
+  echo "  \"${this_namespace}.${this_role}\" -- \"none\"" >> "${output_file}"
   echo "}" >> "${output_file}"
   exit
 fi
 
-cat requirements.yml | shyaml get-value roles | while read dash name role rest ; do
-  if [[ ${role} =~ ${this_namespace}.* ]] ; then
-    echo "    \"${role}\"  " >> "${output_file}"
-  else
-    echo "    \"${role}\" [style=filled fillcolor=grey85] " >> "${output_file}"
-  fi
-done
+if [ "$collections" != "" ]; then
+  echo "$collections" | while read dash name collection rest ; do
+    if [[ ${collection} =~ ${this_namespace}.* ]] ; then
+      echo "    \"${collection}\" [label=<${collection}<BR /><FONT POINT-SIZE=\"8\">collection</FONT>>]" >> "${output_file}"
+    else
+      echo "    \"${collection}\" [style=filled fillcolor=grey85] [label=<${collection}<BR /><FONT POINT-SIZE=\"8\">collection</FONT>>]" >> "${output_file}"
+    fi
+  done
+fi
+
+if [ "$roles" != "" ]; then
+  echo "$roles" | while read dash name role rest ; do
+    if [[ ${role} =~ ${this_namespace}.* ]] ; then
+      echo "    \"${role}\" [label=<${role}<BR /><FONT POINT-SIZE=\"8\">role</FONT>>]" >> "${output_file}"
+    else
+      echo "    \"${role}\" [style=filled fillcolor=grey85] [label=<${role}<BR /><FONT POINT-SIZE=\"8\">role</FONT>>]" >> "${output_file}"
+    fi
+  done
+fi
 
 echo "  }" >> "${output_file}"
 
-cat requirements.yml | shyaml get-value roles | while read dash name role rest ; do
-  echo "  \"${this_role}\" -- \"${role}\"" >> "${output_file}"
-done
+if [ "$collections" != "" ]; then
+  echo "$collections" | while read dash name collection rest ; do
+    echo "  \"${collection}\" -- \"${this_namespace}.${this_role}\"" >> "${output_file}"
+  done
+fi
+
+if [ "$roles" != "" ]; then
+  echo "$roles" | while read dash name role rest ; do
+    echo "  \"${this_namespace}.${this_role}\" -- \"${role}\"" >> "${output_file}"
+  done
+fi
 
 echo "}" >> "${output_file}"
